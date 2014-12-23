@@ -1,5 +1,5 @@
 Pod::Spec.new do |s|
-  s.name     = 'ABVariants'
+  s.name     = 'Variants'
   s.version  = '1.0'
   s.license  = 'MIT'
   s.summary  = 'Experiments/Mods system for iOS and OS X'
