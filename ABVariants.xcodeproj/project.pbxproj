@@ -25,10 +25,6 @@
 		8DBB4E421A49FCCA004AFD81 /* ABRegistry.m in Sources */ = {isa = PBXBuildFile; fileRef = 8DBB4E361A49FCCA004AFD81 /* ABRegistry.m */; };
 		8DBB4E431A49FCCA004AFD81 /* ABVariant.m in Sources */ = {isa = PBXBuildFile; fileRef = 8DBB4E391A49FCCA004AFD81 /* ABVariant.m */; };
 		8DBB4E441A49FCCA004AFD81 /* ABVariant.m in Sources */ = {isa = PBXBuildFile; fileRef = 8DBB4E391A49FCCA004AFD81 /* ABVariant.m */; };
-		8DBB4E481A49FD08004AFD81 /* Variants.podspec in Resources */ = {isa = PBXBuildFile; fileRef = 8DBB4E451A49FD08004AFD81 /* Variants.podspec */; };
-		8DBB4E491A49FD08004AFD81 /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = 8DBB4E461A49FD08004AFD81 /* LICENSE */; };
-		8DBB4E4A1A49FD08004AFD81 /* README.md in Sources */ = {isa = PBXBuildFile; fileRef = 8DBB4E471A49FD08004AFD81 /* README.md */; };
-		8DBB4E4B1A49FD08004AFD81 /* README.md in Sources */ = {isa = PBXBuildFile; fileRef = 8DBB4E471A49FD08004AFD81 /* README.md */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -72,7 +68,6 @@
 		8DBB4E341A49FCCA004AFD81 /* ABMod.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ABMod.m; sourceTree = "<group>"; };
 		8DBB4E351A49FCCA004AFD81 /* ABRegistry.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ABRegistry.h; sourceTree = "<group>"; };
 		8DBB4E361A49FCCA004AFD81 /* ABRegistry.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ABRegistry.m; sourceTree = "<group>"; };
-		8DBB4E371A49FCCA004AFD81 /* ABRegistry+Testing.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "ABRegistry+Testing.h"; sourceTree = "<group>"; };
 		8DBB4E381A49FCCA004AFD81 /* ABVariant.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ABVariant.h; sourceTree = "<group>"; };
 		8DBB4E391A49FCCA004AFD81 /* ABVariant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ABVariant.m; sourceTree = "<group>"; };
 		8DBB4E3A1A49FCCA004AFD81 /* ABVariants.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ABVariants.h; sourceTree = "<group>"; };
@@ -132,7 +127,6 @@
 				8DBB4E341A49FCCA004AFD81 /* ABMod.m */,
 				8DBB4E351A49FCCA004AFD81 /* ABRegistry.h */,
 				8DBB4E361A49FCCA004AFD81 /* ABRegistry.m */,
-				8DBB4E371A49FCCA004AFD81 /* ABRegistry+Testing.h */,
 				8DBB4E381A49FCCA004AFD81 /* ABVariant.h */,
 				8DBB4E391A49FCCA004AFD81 /* ABVariant.m */,
 				8DBB4E3A1A49FCCA004AFD81 /* ABVariants.h */,
@@ -243,11 +237,9 @@
 			files = (
 				8DBB4E271A49FCAC004AFD81 /* altdata.json in Resources */,
 				8DBB4E281A49FCAC004AFD81 /* broken_nocondition.json in Resources */,
-				8DBB4E491A49FD08004AFD81 /* LICENSE in Resources */,
 				8DBB4E2A1A49FCAC004AFD81 /* custom.json in Resources */,
 				8DBB4E291A49FCAC004AFD81 /* broken_nooperator.json in Resources */,
 				8DBB4E2B1A49FCAC004AFD81 /* testdata_reloaded.json in Resources */,
-				8DBB4E481A49FD08004AFD81 /* Variants.podspec in Resources */,
 				8DBB4E2C1A49FCAC004AFD81 /* testdata.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -259,7 +251,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8DBB4E4A1A49FD08004AFD81 /* README.md in Sources */,
 				8DBB4E3F1A49FCCA004AFD81 /* ABMod.m in Sources */,
 				8DBB4E431A49FCCA004AFD81 /* ABVariant.m in Sources */,
 				8DBB4E3D1A49FCCA004AFD81 /* ABFlag.m in Sources */,
@@ -275,7 +266,6 @@
 				8DBB4E3C1A49FCCA004AFD81 /* ABCondition.m in Sources */,
 				8DBB4E401A49FCCA004AFD81 /* ABMod.m in Sources */,
 				8DBB4E421A49FCCA004AFD81 /* ABRegistry.m in Sources */,
-				8DBB4E4B1A49FD08004AFD81 /* README.md in Sources */,
 				8DBB4E2E1A49FCB6004AFD81 /* ABVariantsTest.m in Sources */,
 				8DBB4E441A49FCCA004AFD81 /* ABVariant.m in Sources */,
 				8DBB4E3E1A49FCCA004AFD81 /* ABFlag.m in Sources */,
@@ -434,6 +424,7 @@
 				8DBB4E1D1A49FC11004AFD81 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		8DBB4E1E1A49FC11004AFD81 /* Build configuration list for PBXNativeTarget "ABVariantsTests" */ = {
 			isa = XCConfigurationList;
@@ -442,6 +433,7 @@
 				8DBB4E201A49FC11004AFD81 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

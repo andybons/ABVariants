@@ -41,10 +41,9 @@
 
 @implementation ABRegistry
 
-static dispatch_once_t onceToken;
-static ABRegistry *_sharedRegistry = nil;
-
 + (instancetype)sharedRegistry {
+  static dispatch_once_t onceToken;
+  static ABRegistry *_sharedRegistry = nil;
   dispatch_once(&onceToken, ^{ _sharedRegistry = [[ABRegistry alloc] init]; });
   return _sharedRegistry;
 }
@@ -234,15 +233,6 @@ static ABRegistry *_sharedRegistry = nil;
                                             op:dictionary[@"condition_operator"]
                                     conditions:conditions
                                           mods:mods];
-}
-
-#pragma mark - Test helpers
-
-+ (void)_setSharedRegistry:(ABRegistry *)registry {
-  if (registry == nil) {
-    onceToken = 0;
-  }
-  _sharedRegistry = registry;
 }
 
 @end

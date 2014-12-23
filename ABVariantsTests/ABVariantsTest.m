@@ -26,27 +26,25 @@
 @import XCTest;
 
 #import "ABVariants.h"
-#import "ABRegistry+Testing.h"
 
 @interface ABVariantsRegistryTest : XCTestCase
-
+@property(nonatomic, strong) ABRegistry *registry;
 @end
 
 @implementation ABVariantsRegistryTest
 
 - (void)setUp {
-  [ABRegistry _setSharedRegistry:nil];
+  self.registry = [[ABRegistry alloc] init];
   [super setUp];
 }
 
 - (void)loadConfigFile:(NSString *)filename {
-  ABRegistry *registry = [ABRegistry sharedRegistry];
   NSError *error;
   NSString *filePath =
       [[NSBundle bundleForClass:[self class]] pathForResource:filename
                                                        ofType:nil];
-  [registry loadConfigFromData:[NSData dataWithContentsOfFile:filePath]
-                         error:&error];
+  [self.registry loadConfigFromData:[NSData dataWithContentsOfFile:filePath]
+                              error:&error];
   XCTAssertNil(error);
 }
 
@@ -75,37 +73,44 @@
 
 - (void)testRandom {
   [self loadConfigFile:@"testdata.json"];
-  ABRegistry *registry = [ABRegistry sharedRegistry];
-  NSNumber *val = [registry flagValueWithName:@"always_passes"];
+  NSNumber *val = [self.registry flagValueWithName:@"always_passes"];
   XCTAssertTrue(val.boolValue);
-  val = [registry flagValueWithName:@"always_fails"];
+  val = [self.registry flagValueWithName:@"always_fails"];
   XCTAssertFalse(val.boolValue);
 }
 
 - (void)testModRange {
   [self loadConfigFile:@"testdata.json"];
-  ABRegistry *registry = [ABRegistry sharedRegistry];
-  NSNumber *val =
-      [registry flagValueWithName:@"mod_range" context:@{
-        @"user_id" : @0
-      }];
+  NSNumber *val = [self.registry flagValueWithName:@"mod_range"
+                                           context:@{
+                                             @"user_id" : @0
+                                           }];
   XCTAssertTrue(val.boolValue);
-  val = [registry flagValueWithName:@"mod_range" context:@{ @"user_id" : @3 }];
+  val = [self.registry flagValueWithName:@"mod_range"
+                                 context:@{
+                                   @"user_id" : @3
+                                 }];
   XCTAssertTrue(val.boolValue);
-  val = [registry flagValueWithName:@"mod_range" context:@{ @"user_id" : @9 }];
+  val = [self.registry flagValueWithName:@"mod_range"
+                                 context:@{
+                                   @"user_id" : @9
+                                 }];
   XCTAssertTrue(val.boolValue);
-  val = [registry flagValueWithName:@"mod_range" context:@{ @"user_id" : @50 }];
+  val = [self.registry flagValueWithName:@"mod_range"
+                                 context:@{
+                                   @"user_id" : @50
+                                 }];
   XCTAssertFalse(val.boolValue);
 }
 
 - (void)testOperators {
   [self loadConfigFile:@"testdata.json"];
-  ABRegistry *registry = [ABRegistry sharedRegistry];
-  NSNumber *val = [registry flagValueWithName:@"or_result"
-                                      context:[NSNumber numberWithBool:YES]];
+  NSNumber *val =
+      [self.registry flagValueWithName:@"or_result"
+                               context:[NSNumber numberWithBool:YES]];
   XCTAssertTrue(val.boolValue);
-  val = [registry flagValueWithName:@"and_result"
-                            context:[NSNumber numberWithBool:NO]];
+  val = [self.registry flagValueWithName:@"and_result"
+                                 context:[NSNumber numberWithBool:NO]];
   XCTAssertFalse(val.boolValue);
 }
 
@@ -124,8 +129,7 @@
 }
 
 - (void)testCustomCondition {
-  ABRegistry *registry = [ABRegistry sharedRegistry];
-  [registry
+  [self.registry
       registerConditionTypeWithId:@"CUSTOM"
                         specBlock:^ABConditionEvaluator(id<NSCopying> value) {
                             return ^BOOL(id<NSCopying> context) {
@@ -134,23 +138,23 @@
                             };
                         }];
   [self loadConfigFile:@"custom.json"];
-  NSNumber *val = [registry flagValueWithName:@"custom_value" context:@{}];
+  NSNumber *val = [self.registry flagValueWithName:@"custom_value" context:@{}];
   XCTAssertEqual(val.integerValue, 0);
-  val = [registry flagValueWithName:@"custom_value"
-                            context:@{
-                              @"password" : @"wrong"
-                            }];
+  val = [self.registry flagValueWithName:@"custom_value"
+                                 context:@{
+                                   @"password" : @"wrong"
+                                 }];
   XCTAssertEqual(val.integerValue, 0);
-  val = [registry flagValueWithName:@"custom_value"
-                            context:@{
-                              @"password" : @"secret"
-                            }];
+  val = [self.registry flagValueWithName:@"custom_value"
+                                 context:@{
+                                   @"password" : @"secret"
+                                 }];
   XCTAssertEqual(val.integerValue, 42);
 }
 
 - (void)testGetFlags {
   [self loadConfigFile:@"testdata.json"];
-  NSArray *allFlags = [[ABRegistry sharedRegistry] allFlags];
+  NSArray *allFlags = [self.registry allFlags];
   XCTAssertTrue([allFlags containsObject:@"always_passes"]);
   XCTAssertTrue([allFlags containsObject:@"always_fails"]);
   XCTAssertTrue([allFlags containsObject:@"coin_flip"]);
@@ -160,7 +164,7 @@
 - (void)testGetVariants {
   [self loadConfigFile:@"testdata.json"];
   ABVariant *variant;
-  for (ABVariant *v in [[ABRegistry sharedRegistry] allVariants]) {
+  for (ABVariant *v in [self.registry allVariants]) {
     if ([v.identifier isEqualToString:@"CoinFlipTest"]) {
       variant = v;
       break;
