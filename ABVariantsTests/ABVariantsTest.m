@@ -25,7 +25,7 @@
 @import Foundation;
 @import XCTest;
 
-#import "ABVariants.h"
+#import "Variants.h"
 
 @interface ABVariantsRegistryTest : XCTestCase
 @property(nonatomic, strong) ABRegistry *registry;

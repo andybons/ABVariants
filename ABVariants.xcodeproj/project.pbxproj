@@ -70,7 +70,7 @@
 		8DBB4E361A49FCCA004AFD81 /* ABRegistry.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ABRegistry.m; sourceTree = "<group>"; };
 		8DBB4E381A49FCCA004AFD81 /* ABVariant.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ABVariant.h; sourceTree = "<group>"; };
 		8DBB4E391A49FCCA004AFD81 /* ABVariant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ABVariant.m; sourceTree = "<group>"; };
-		8DBB4E3A1A49FCCA004AFD81 /* ABVariants.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ABVariants.h; sourceTree = "<group>"; };
+		8DBB4E3A1A49FCCA004AFD81 /* Variants.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Variants.h; sourceTree = "<group>"; };
 		8DBB4E451A49FD08004AFD81 /* Variants.podspec */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Variants.podspec; sourceTree = "<group>"; };
 		8DBB4E461A49FD08004AFD81 /* LICENSE */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		8DBB4E471A49FD08004AFD81 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -129,7 +129,7 @@
 				8DBB4E361A49FCCA004AFD81 /* ABRegistry.m */,
 				8DBB4E381A49FCCA004AFD81 /* ABVariant.h */,
 				8DBB4E391A49FCCA004AFD81 /* ABVariant.m */,
-				8DBB4E3A1A49FCCA004AFD81 /* ABVariants.h */,
+				8DBB4E3A1A49FCCA004AFD81 /* Variants.h */,
 			);
 			path = ABVariants;
 			sourceTree = "<group>";
