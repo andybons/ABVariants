@@ -26,19 +26,14 @@
 
 #import "ABCondition.h"
 
-@class ABFlag;
-@class ABVariant;
+extern NSString *const ABRegistryDidChangeNotification;
 
 @interface ABRegistry : NSObject
 
-+ (instancetype)sharedRegistry;
-- (void)addFlag:(ABFlag *)flag;
++ (instancetype)defaultRegistry;
 - (id)flagValueWithName:(NSString *)name;
 - (id)flagValueWithName:(NSString *)name context:(id<NSCopying>)context;
-- (NSArray *)allFlags;
-- (void)addVariant:(ABVariant *)variant;
-- (NSArray *)allVariants;
-- (void)registerConditionTypeWithId:(NSString *)identifier
+- (void)registerConditionTypeWithID:(NSString *)identifier
                           specBlock:(ABConditionSpec)specBlock;
 - (void)loadConfigFromData:(NSData *)data error:(NSError **)error;
 - (void)loadConfigFromDictionary:(NSDictionary *)dictionary;

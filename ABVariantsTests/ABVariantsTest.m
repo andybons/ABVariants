@@ -48,10 +48,10 @@
   XCTAssertNil(error);
 }
 
-- (void)testRegistrySingleton {
-  XCTAssertNotNil([ABRegistry sharedRegistry]);
-  XCTAssertEqualObjects([ABRegistry sharedRegistry],
-                        [ABRegistry sharedRegistry]);
+- (void)testDefaultRegistrySingleton {
+  XCTAssertNotNil([ABRegistry defaultRegistry]);
+  XCTAssertEqualObjects([ABRegistry defaultRegistry],
+                        [ABRegistry defaultRegistry]);
 }
 
 - (void)testErrorConditions {
@@ -67,8 +67,7 @@
       }
     ]
   };
-  XCTAssertThrows(
-      [[ABRegistry sharedRegistry] loadConfigFromDictionary:config]);
+  XCTAssertThrows([self.registry loadConfigFromDictionary:config]);
 }
 
 - (void)testRandom {
@@ -130,7 +129,7 @@
 
 - (void)testCustomCondition {
   [self.registry
-      registerConditionTypeWithId:@"CUSTOM"
+      registerConditionTypeWithID:@"CUSTOM"
                         specBlock:^ABConditionEvaluator(id<NSCopying> value) {
                             return ^BOOL(id<NSCopying> context) {
                                 return [((NSDictionary *)context)[@"password"]
@@ -150,27 +149,6 @@
                                    @"password" : @"secret"
                                  }];
   XCTAssertEqual(val.integerValue, 42);
-}
-
-- (void)testGetFlags {
-  [self loadConfigFile:@"testdata.json"];
-  NSArray *allFlags = [self.registry allFlags];
-  XCTAssertTrue([allFlags containsObject:@"always_passes"]);
-  XCTAssertTrue([allFlags containsObject:@"always_fails"]);
-  XCTAssertTrue([allFlags containsObject:@"coin_flip"]);
-  XCTAssertTrue([allFlags containsObject:@"mod_range"]);
-}
-
-- (void)testGetVariants {
-  [self loadConfigFile:@"testdata.json"];
-  ABVariant *variant;
-  for (ABVariant *v in [self.registry allVariants]) {
-    if ([v.identifier isEqualToString:@"CoinFlipTest"]) {
-      variant = v;
-      break;
-    }
-  }
-  XCTAssertNotNil(variant);
 }
 
 @end

@@ -29,46 +29,45 @@
 #import "ABMod.h"
 #import "ABVariant.h"
 
+NSString *const ABRegistryDidChangeNotification =
+    @"ABRegistryDidChangeNotification";
+
 @interface ABRegistry ()
+- (void)_addFlag:(ABFlag *)flag;
+- (void)_addVariant:(ABVariant *)variant;
 - (void)_registerBuiltInConditionTypes;
 - (ABVariant *)_variantFromDictionary:(NSDictionary *)dictionary;
 
-@property(nonatomic, strong) NSMutableDictionary *variantIdToVariant;
+@property(nonatomic, strong) dispatch_queue_t isolationQueue;
+@property(nonatomic, strong) NSMutableDictionary *variantIDToVariant;
 @property(nonatomic, strong) NSMutableDictionary *conditionTypeToSpecBlock;
 @property(nonatomic, strong) NSMutableDictionary *flagNameToFlag;
-@property(nonatomic, strong) NSMutableDictionary *flagNameToVariantIdSet;
+@property(nonatomic, strong) NSMutableDictionary *flagNameToVariantIDSet;
 @end
 
 @implementation ABRegistry
 
-+ (instancetype)sharedRegistry {
++ (instancetype)defaultRegistry {
   static dispatch_once_t onceToken;
-  static ABRegistry *_sharedRegistry = nil;
-  dispatch_once(&onceToken, ^{ _sharedRegistry = [[ABRegistry alloc] init]; });
-  return _sharedRegistry;
+  static ABRegistry *_defaultRegistry = nil;
+  dispatch_once(&onceToken, ^{ _defaultRegistry = [[ABRegistry alloc] init]; });
+  return _defaultRegistry;
 }
 
 - (instancetype)init {
   self = [super init];
   if (self) {
-    _variantIdToVariant = [NSMutableDictionary dictionary];
+    _isolationQueue =
+        dispatch_queue_create("com.andybons.ABVariants.registryIsolationQueue",
+                              DISPATCH_QUEUE_CONCURRENT);
+    _variantIDToVariant = [NSMutableDictionary dictionary];
     _conditionTypeToSpecBlock = [NSMutableDictionary dictionary];
     _flagNameToFlag = [NSMutableDictionary dictionary];
-    _flagNameToVariantIdSet = [NSMutableDictionary dictionary];
+    _flagNameToVariantIDSet = [NSMutableDictionary dictionary];
 
     [self _registerBuiltInConditionTypes];
   }
   return self;
-}
-
-- (void)addFlag:(ABFlag *)flag {
-  if (self.flagNameToFlag[flag.name]) {
-    [NSException
-         raise:@"Flag has already been added"
-        format:@"A Flag with the name %@ has already been added", flag.name];
-  }
-  self.flagNameToFlag[flag.name] = flag;
-  self.flagNameToVariantIdSet[flag.name] = [NSMutableSet set];
 }
 
 - (id)flagValueWithName:(NSString *)name {
@@ -76,51 +75,34 @@
 }
 
 - (id)flagValueWithName:(NSString *)name context:(id<NSCopying>)context {
-  id value = [(ABFlag *)self.flagNameToFlag[name] baseValue];
-  for (NSString *variantId in self.flagNameToVariantIdSet[name]) {
-    ABVariant *v = self.variantIdToVariant[variantId];
-    if ([v evaluateWithContext:context]) {
-      value = [v valueForFlagWithName:name];
-    }
-  }
+  __block id value;
+  dispatch_sync(self.isolationQueue, ^{
+      value = [(ABFlag *)self.flagNameToFlag[name] baseValue];
+      for (NSString *variantId in self.flagNameToVariantIDSet[name]) {
+        ABVariant *v = self.variantIDToVariant[variantId];
+        if ([v evaluateWithContext:context]) {
+          value = [v valueForFlagWithName:name];
+        }
+      }
+  });
   return value;
 }
 
-- (NSArray *)allFlags {
-  return [self.flagNameToFlag allKeys];
-}
-
-- (void)addVariant:(ABVariant *)variant {
-  if (self.variantIdToVariant[variant.identifier]) {
-    [NSException raise:@"Variant has already been added"
-                format:@"A Variant with the idenfier %@ has already been added",
-                       variant.identifier];
-  }
-  for (ABMod *m in variant.mods) {
-    if (![self.flagNameToFlag.allKeys containsObject:m.flagName]) {
-      [NSException raise:@"Variant has unknown flag"
-                  format:@"Variant with the idenfier %@ has unknown flag %@",
-                         variant.identifier, m.flagName];
-    }
-    [self.flagNameToVariantIdSet[m.flagName] addObject:variant.identifier];
-  }
-  self.variantIdToVariant[variant.identifier] = variant;
-}
-
-- (NSArray *)allVariants {
-  return [self.variantIdToVariant allValues];
-}
-
-- (void)registerConditionTypeWithId:(NSString *)identifier
+- (void)registerConditionTypeWithID:(NSString *)identifier
                           specBlock:(ABConditionSpec)specBlock {
   identifier = [identifier uppercaseString];
-  if (self.conditionTypeToSpecBlock[identifier]) {
-    [NSException
-         raise:@"Condition has already been registered"
-        format:@"A Condition with identifier %@ has already been registered",
-               identifier];
-  }
-  self.conditionTypeToSpecBlock[identifier] = specBlock;
+  dispatch_sync(self.isolationQueue, ^{
+      if (self.conditionTypeToSpecBlock[identifier]) {
+        [NSException
+             raise:@"Condition has already been registered"
+            format:
+                @"A Condition with identifier %@ has already been registered",
+                identifier];
+      }
+  });
+  dispatch_barrier_async(self.isolationQueue, ^{
+      self.conditionTypeToSpecBlock[identifier] = specBlock;
+  });
 }
 
 - (void)loadConfigFromData:(NSData *)data error:(NSError **)error {
@@ -134,14 +116,58 @@
 
 - (void)loadConfigFromDictionary:(NSDictionary *)dictionary {
   for (NSDictionary *d in dictionary[@"flag_defs"]) {
-    [self addFlag:[ABFlag flagFromDictionary:d]];
+    [self _addFlag:[ABFlag flagFromDictionary:d]];
   }
   for (NSDictionary *d in dictionary[@"variants"]) {
-    [self addVariant:[self _variantFromDictionary:d]];
+    [self _addVariant:[self _variantFromDictionary:d]];
   }
+  [[NSNotificationCenter defaultCenter]
+      postNotificationName:ABRegistryDidChangeNotification
+                    object:self];
 }
 
 #pragma mark - Private methods
+
+- (void)_addFlag:(ABFlag *)flag {
+  dispatch_sync(self.isolationQueue, ^{
+      if (self.flagNameToFlag[flag.name]) {
+        [NSException raise:@"Flag has already been added"
+                    format:@"A Flag with the name %@ has already been added",
+                           flag.name];
+      }
+  });
+  dispatch_barrier_async(self.isolationQueue, ^{
+      self.flagNameToFlag[flag.name] = flag;
+      self.flagNameToVariantIDSet[flag.name] = [NSMutableSet set];
+  });
+}
+
+- (void)_addVariant:(ABVariant *)variant {
+  dispatch_sync(self.isolationQueue, ^{
+      if (self.variantIDToVariant[variant.identifier]) {
+        [NSException
+             raise:@"Variant has already been added"
+            format:@"A Variant with the idenfier %@ has already been added",
+                   variant.identifier];
+      }
+  });
+  for (ABMod *m in variant.mods) {
+    dispatch_sync(self.isolationQueue, ^{
+        if (![self.flagNameToFlag.allKeys containsObject:m.flagName]) {
+          [NSException
+               raise:@"Variant has unknown flag"
+              format:@"Variant with the idenfier %@ has unknown flag %@",
+                     variant.identifier, m.flagName];
+        }
+    });
+    dispatch_barrier_async(self.isolationQueue, ^{
+        [self.flagNameToVariantIDSet[m.flagName] addObject:variant.identifier];
+    });
+  }
+  dispatch_barrier_async(self.isolationQueue, ^{
+      self.variantIDToVariant[variant.identifier] = variant;
+  });
+}
 
 - (void)_registerBuiltInConditionTypes {
   srand48(time(0));
@@ -157,7 +183,7 @@
           return drand48() <= [(NSNumber *)value doubleValue];
       };
   };
-  [self registerConditionTypeWithId:@"RANDOM" specBlock:randomSpec];
+  [self registerConditionTypeWithID:@"RANDOM" specBlock:randomSpec];
 
   ABConditionSpec rangeSpec = ^ABConditionEvaluator(id<NSCopying> value) {
       NSArray *values = (NSArray *)value;
@@ -200,7 +226,7 @@
           return mod >= rangeBegin.integerValue && mod <= rangeEnd.integerValue;
       };
   };
-  [self registerConditionTypeWithId:@"MOD_RANGE" specBlock:rangeSpec];
+  [self registerConditionTypeWithID:@"MOD_RANGE" specBlock:rangeSpec];
 }
 
 - (ABVariant *)_variantFromDictionary:(NSDictionary *)dictionary {
