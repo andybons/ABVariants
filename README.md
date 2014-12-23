@@ -1,4 +1,4 @@
-variants-ios
+ABVariants
 ============
 
-Experiments/Mods system for iOS
+Experiments/Mods system for iOS and OS X

@@ -1,21 +1,37 @@
 //
-//  Registry.m
-//  Variants
+//  ABRegistry.m
+//  ABVariants
 //
-//  Created by Andrew Bonventre on 12/18/14.
-//  Copyright (c) 2014 Andrew Bonventre. All rights reserved.
+//  Copyright (c) 2014 Andrew Bonventre
 //
+//  Permission is hereby granted, free of charge, to any person obtaining a copy
+//  of this software and associated documentation files (the "Software"), to
+//  deal in the Software without restriction, including without limitation the
+//  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+//  sell copies of the Software, and to permit persons to whom the Software is
+//  furnished to do so, subject to the following conditions:
+//
+//  The above copyright notice and this permission notice shall be included in
+//  all copies or substantial portions of the Software.
+//
+//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+//  IN THE SOFTWARE.
 
-#import "Registry.h"
+#import "ABRegistry.h"
 
-#import "Condition.h"
-#import "Flag.h"
-#import "Mod.h"
-#import "Variant.h"
+#import "ABCondition.h"
+#import "ABFlag.h"
+#import "ABMod.h"
+#import "ABVariant.h"
 
-@interface Registry ()
+@interface ABRegistry ()
 - (void)_registerBuiltInConditionTypes;
-- (Variant *)_variantFromDictionary:(NSDictionary *)dictionary;
+- (ABVariant *)_variantFromDictionary:(NSDictionary *)dictionary;
 
 @property(nonatomic, strong) NSMutableDictionary *variantIdToVariant;
 @property(nonatomic, strong) NSMutableDictionary *conditionTypeToSpecBlock;
@@ -23,13 +39,13 @@
 @property(nonatomic, strong) NSMutableDictionary *flagNameToVariantIdSet;
 @end
 
-@implementation Registry
+@implementation ABRegistry
 
 static dispatch_once_t onceToken;
-static Registry *_sharedRegistry = nil;
+static ABRegistry *_sharedRegistry = nil;
 
 + (instancetype)sharedRegistry {
-  dispatch_once(&onceToken, ^{ _sharedRegistry = [[Registry alloc] init]; });
+  dispatch_once(&onceToken, ^{ _sharedRegistry = [[ABRegistry alloc] init]; });
   return _sharedRegistry;
 }
 
@@ -46,7 +62,7 @@ static Registry *_sharedRegistry = nil;
   return self;
 }
 
-- (void)addFlag:(Flag *)flag {
+- (void)addFlag:(ABFlag *)flag {
   if (self.flagNameToFlag[flag.name]) {
     [NSException
          raise:@"Flag has already been added"
@@ -61,9 +77,9 @@ static Registry *_sharedRegistry = nil;
 }
 
 - (id)flagValueWithName:(NSString *)name context:(id<NSCopying>)context {
-  id value = [(Flag *)self.flagNameToFlag[name] baseValue];
+  id value = [(ABFlag *)self.flagNameToFlag[name] baseValue];
   for (NSString *variantId in self.flagNameToVariantIdSet[name]) {
-    Variant *v = self.variantIdToVariant[variantId];
+    ABVariant *v = self.variantIdToVariant[variantId];
     if ([v evaluateWithContext:context]) {
       value = [v valueForFlagWithName:name];
     }
@@ -75,13 +91,13 @@ static Registry *_sharedRegistry = nil;
   return [self.flagNameToFlag allKeys];
 }
 
-- (void)addVariant:(Variant *)variant {
+- (void)addVariant:(ABVariant *)variant {
   if (self.variantIdToVariant[variant.identifier]) {
     [NSException raise:@"Variant has already been added"
                 format:@"A Variant with the idenfier %@ has already been added",
                        variant.identifier];
   }
-  for (Mod *m in variant.mods) {
+  for (ABMod *m in variant.mods) {
     if (![self.flagNameToFlag.allKeys containsObject:m.flagName]) {
       [NSException raise:@"Variant has unknown flag"
                   format:@"Variant with the idenfier %@ has unknown flag %@",
@@ -97,7 +113,7 @@ static Registry *_sharedRegistry = nil;
 }
 
 - (void)registerConditionTypeWithId:(NSString *)identifier
-                          specBlock:(ConditionSpec)specBlock {
+                          specBlock:(ABConditionSpec)specBlock {
   identifier = [identifier uppercaseString];
   if (self.conditionTypeToSpecBlock[identifier]) {
     [NSException
@@ -119,7 +135,7 @@ static Registry *_sharedRegistry = nil;
 
 - (void)loadConfigFromDictionary:(NSDictionary *)dictionary {
   for (NSDictionary *d in dictionary[@"flag_defs"]) {
-    [self addFlag:[Flag flagFromDictionary:d]];
+    [self addFlag:[ABFlag flagFromDictionary:d]];
   }
   for (NSDictionary *d in dictionary[@"variants"]) {
     [self addVariant:[self _variantFromDictionary:d]];
@@ -130,7 +146,7 @@ static Registry *_sharedRegistry = nil;
 
 - (void)_registerBuiltInConditionTypes {
   srand48(time(0));
-  ConditionSpec randomSpec = ^ConditionEvaluator(id<NSCopying> value) {
+  ABConditionSpec randomSpec = ^ABConditionEvaluator(id<NSCopying> value) {
       if (![(NSObject *)value isKindOfClass:[NSNumber class]] ||
           [(NSNumber *)value doubleValue] < 0 ||
           [(NSNumber *)value doubleValue] > 1) {
@@ -144,7 +160,7 @@ static Registry *_sharedRegistry = nil;
   };
   [self registerConditionTypeWithId:@"RANDOM" specBlock:randomSpec];
 
-  ConditionSpec rangeSpec = ^ConditionEvaluator(id<NSCopying> value) {
+  ABConditionSpec rangeSpec = ^ABConditionEvaluator(id<NSCopying> value) {
       NSArray *values = (NSArray *)value;
       if (!values || values.count != 3) {
         [NSException
@@ -188,11 +204,11 @@ static Registry *_sharedRegistry = nil;
   [self registerConditionTypeWithId:@"MOD_RANGE" specBlock:rangeSpec];
 }
 
-- (Variant *)_variantFromDictionary:(NSDictionary *)dictionary {
+- (ABVariant *)_variantFromDictionary:(NSDictionary *)dictionary {
   NSMutableArray *conditions = [NSMutableArray array];
   for (NSDictionary *d in dictionary[@"conditions"]) {
     NSString *type = [d[@"type"] uppercaseString];
-    ConditionSpec spec = self.conditionTypeToSpecBlock[type];
+    ABConditionSpec spec = self.conditionTypeToSpecBlock[type];
     if (!spec) {
       [NSException
            raise:@"Unregistered condition type"
@@ -206,23 +222,23 @@ static Registry *_sharedRegistry = nil;
           format:@"Cannot specify both a value and array of values for %@",
                  type];
     }
-    ConditionEvaluator evaluator = value ? spec(value) : spec(values);
+    ABConditionEvaluator evaluator = value ? spec(value) : spec(values);
     [conditions
-        addObject:[[Condition alloc] initWithEvaluationBlock:evaluator]];
+        addObject:[[ABCondition alloc] initWithEvaluationBlock:evaluator]];
   }
   NSMutableArray *mods = [NSMutableArray array];
   for (NSDictionary *d in dictionary[@"mods"]) {
-    [mods addObject:[Mod modFromDictionary:d]];
+    [mods addObject:[ABMod modFromDictionary:d]];
   }
-  return [[Variant alloc] initWithIdentifier:dictionary[@"id"]
-                                          op:dictionary[@"condition_operator"]
-                                  conditions:conditions
-                                        mods:mods];
+  return [[ABVariant alloc] initWithIdentifier:dictionary[@"id"]
+                                            op:dictionary[@"condition_operator"]
+                                    conditions:conditions
+                                          mods:mods];
 }
 
 #pragma mark - Test helpers
 
-+ (void)_setSharedRegistry:(Registry *)registry {
++ (void)_setSharedRegistry:(ABRegistry *)registry {
   if (registry == nil) {
     onceToken = 0;
   }

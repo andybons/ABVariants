@@ -1,34 +1,46 @@
 //
-//  RegistryTest.m
-//  Variants
+//  ABRegistryTest.m
+//  ABVariants
 //
-//  Created by Andrew Bonventre on 12/18/14.
-//  Copyright (c) 2014 Andrew Bonventre. All rights reserved.
+//  Copyright (c) 2014 Andrew Bonventre
 //
+//  Permission is hereby granted, free of charge, to any person obtaining a copy
+//  of this software and associated documentation files (the "Software"), to
+//  deal in the Software without restriction, including without limitation the
+//  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+//  sell copies of the Software, and to permit persons to whom the Software is
+//  furnished to do so, subject to the following conditions:
+//
+//  The above copyright notice and this permission notice shall be included in
+//  all copies or substantial portions of the Software.
+//
+//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+//  IN THE SOFTWARE.
 
-#import <Foundation/Foundation.h>
-#import <XCTest/XCTest.h>
+@import Foundation;
+@import XCTest;
 
-#import "Condition.h"
-#import "Flag.h"
-#import "Mod.h"
-#import "Registry.h"
-#import "Registry+Testing.h"
-#import "Variant.h"
+#import "ABVariants.h"
+#import "ABRegistry+Testing.h"
 
-@interface VariantsRegistryTest : XCTestCase
+@interface ABVariantsRegistryTest : XCTestCase
 
 @end
 
-@implementation VariantsRegistryTest
+@implementation ABVariantsRegistryTest
 
 - (void)setUp {
-  [Registry _setSharedRegistry:nil];
+  [ABRegistry _setSharedRegistry:nil];
   [super setUp];
 }
 
 - (void)loadConfigFile:(NSString *)filename {
-  Registry *registry = [Registry sharedRegistry];
+  ABRegistry *registry = [ABRegistry sharedRegistry];
   NSError *error;
   NSString *filePath =
       [[NSBundle bundleForClass:[self class]] pathForResource:filename
@@ -39,8 +51,9 @@
 }
 
 - (void)testRegistrySingleton {
-  XCTAssertNotNil([Registry sharedRegistry]);
-  XCTAssertEqualObjects([Registry sharedRegistry], [Registry sharedRegistry]);
+  XCTAssertNotNil([ABRegistry sharedRegistry]);
+  XCTAssertEqualObjects([ABRegistry sharedRegistry],
+                        [ABRegistry sharedRegistry]);
 }
 
 - (void)testErrorConditions {
@@ -56,12 +69,13 @@
       }
     ]
   };
-  XCTAssertThrows([[Registry sharedRegistry] loadConfigFromDictionary:config]);
+  XCTAssertThrows(
+      [[ABRegistry sharedRegistry] loadConfigFromDictionary:config]);
 }
 
 - (void)testRandom {
   [self loadConfigFile:@"testdata.json"];
-  Registry *registry = [Registry sharedRegistry];
+  ABRegistry *registry = [ABRegistry sharedRegistry];
   NSNumber *val = [registry flagValueWithName:@"always_passes"];
   XCTAssertTrue(val.boolValue);
   val = [registry flagValueWithName:@"always_fails"];
@@ -70,7 +84,7 @@
 
 - (void)testModRange {
   [self loadConfigFile:@"testdata.json"];
-  Registry *registry = [Registry sharedRegistry];
+  ABRegistry *registry = [ABRegistry sharedRegistry];
   NSNumber *val =
       [registry flagValueWithName:@"mod_range" context:@{
         @"user_id" : @0
@@ -86,7 +100,7 @@
 
 - (void)testOperators {
   [self loadConfigFile:@"testdata.json"];
-  Registry *registry = [Registry sharedRegistry];
+  ABRegistry *registry = [ABRegistry sharedRegistry];
   NSNumber *val = [registry flagValueWithName:@"or_result"
                                       context:[NSNumber numberWithBool:YES]];
   XCTAssertTrue(val.boolValue);
@@ -110,10 +124,10 @@
 }
 
 - (void)testCustomCondition {
-  Registry *registry = [Registry sharedRegistry];
+  ABRegistry *registry = [ABRegistry sharedRegistry];
   [registry
       registerConditionTypeWithId:@"CUSTOM"
-                        specBlock:^ConditionEvaluator(id<NSCopying> value) {
+                        specBlock:^ABConditionEvaluator(id<NSCopying> value) {
                             return ^BOOL(id<NSCopying> context) {
                                 return [((NSDictionary *)context)[@"password"]
                                     isEqualToString:(NSString *)value];
@@ -136,7 +150,7 @@
 
 - (void)testGetFlags {
   [self loadConfigFile:@"testdata.json"];
-  NSArray *allFlags = [[Registry sharedRegistry] allFlags];
+  NSArray *allFlags = [[ABRegistry sharedRegistry] allFlags];
   XCTAssertTrue([allFlags containsObject:@"always_passes"]);
   XCTAssertTrue([allFlags containsObject:@"always_fails"]);
   XCTAssertTrue([allFlags containsObject:@"coin_flip"]);
@@ -145,8 +159,8 @@
 
 - (void)testGetVariants {
   [self loadConfigFile:@"testdata.json"];
-  Variant *variant;
-  for (Variant *v in [[Registry sharedRegistry] allVariants]) {
+  ABVariant *variant;
+  for (ABVariant *v in [[ABRegistry sharedRegistry] allVariants]) {
     if ([v.identifier isEqualToString:@"CoinFlipTest"]) {
       variant = v;
       break;
