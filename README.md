@@ -94,12 +94,12 @@ Now, there is no built-in condition type called CUSTOM, so when the above config
 The above code evaluates the CUSTOM condition by checking to see if the value of the "username" key in the passed in context object is present in the values passed when the variant is constructed. Here are a couple examples of getting the flag value:
 
 ```objective-c
-NSNumber hasAccess = [[ABRegistry sharedRegistry] flagValueWithName:@"enable_new_hotness_feature"
-                                                            context:@{@"username": @"andybons"}];
+NSNumber* hasAccess = [[ABRegistry sharedRegistry] flagValueWithName:@"enable_new_hotness_feature"
+                                                             context:@{@"username": @"andybons"}];
 // hasAccess.boolValue == YES
 
-NSNumber hasAccess = [[ABRegistry sharedRegistry] flagValueWithName:@"enable_new_hotness_feature"
-                                                            context:@{@"username": @"tessr"}];
+NSNumber* hasAccess = [[ABRegistry sharedRegistry] flagValueWithName:@"enable_new_hotness_feature"
+                                                             context:@{@"username": @"tessr"}];
 // hasAccess.boolValue == NO
 ```
 
