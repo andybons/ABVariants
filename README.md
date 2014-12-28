@@ -113,6 +113,11 @@ Take a look at the unit tests for a working example.
 pod install Variants
 ```
 
+## Import
+```objective-c
+#import <Variants/Variants.h>
+```
+
 ## Author
 
 [Andrew Bonventre](https://github.com/andybons)
