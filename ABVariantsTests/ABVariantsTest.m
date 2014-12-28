@@ -67,7 +67,26 @@
       }
     ]
   };
-  XCTAssertThrows([self.registry loadConfigFromDictionary:config]);
+  NSError *error;
+  [self.registry loadConfigFromDictionary:config error:&error];
+  XCTAssertNotNil(error);
+}
+
+- (void)testNilErrorDereference {
+  for (NSString *filename in @[
+         @"testdata.json",
+         @"broken_nocondition.json",
+         @"broken_nooperator.json",
+         @"custom.json",
+         @"testdata_reloaded.json",
+         @"testdata.json"
+       ]) {
+    NSString *filePath =
+        [[NSBundle bundleForClass:[self class]] pathForResource:filename
+                                                         ofType:nil];
+    [self.registry loadConfigFromData:[NSData dataWithContentsOfFile:filePath]
+                                error:nil];
+  }
 }
 
 - (void)testRandom {
@@ -114,20 +133,30 @@
 }
 
 - (void)testNoOperators {
-  XCTAssertThrowsSpecificNamed(
-      [self loadConfigFile:@"broken_nooperator.json"], NSException,
-      @"Invalid arguments to Variant initializer",
+  NSError *error;
+  NSString *filePath = [[NSBundle bundleForClass:[self class]]
+      pathForResource:@"broken_nooperator.json"
+               ofType:nil];
+  [self.registry loadConfigFromData:[NSData dataWithContentsOfFile:filePath]
+                              error:&error];
+  XCTAssertEqual(
+      error.localizedDescription,
       @"Cannot have multiple variant conditions without an operator");
 }
 
 - (void)testNoCondition {
-  XCTAssertThrowsSpecificNamed(
-      [self loadConfigFile:@"broken_nocondition.json"], NSException,
-      @"Invalid arguments to Variant initializer",
-      @"Cannot have a Variant operator without multiple conditions");
+  NSError *error;
+  NSString *filePath = [[NSBundle bundleForClass:[self class]]
+      pathForResource:@"broken_nocondition.json"
+               ofType:nil];
+  [self.registry loadConfigFromData:[NSData dataWithContentsOfFile:filePath]
+                              error:&error];
+  XCTAssertEqual(error.localizedDescription,
+                 @"Cannot have a Variant operator without multiple conditions");
 }
 
 - (void)testCustomCondition {
+  NSError *error;
   [self.registry
       registerConditionTypeWithID:@"CUSTOM"
                         specBlock:^ABConditionEvaluator(id<NSCopying> value) {
@@ -135,7 +164,8 @@
                                 return [((NSDictionary *)context)[@"password"]
                                     isEqualToString:(NSString *)value];
                             };
-                        }];
+                        } error:&error];
+  XCTAssertNil(error);
   [self loadConfigFile:@"custom.json"];
   NSNumber *val = [self.registry flagValueWithName:@"custom_value"];
   XCTAssertEqual(val.integerValue, 0);
@@ -151,7 +181,7 @@
   XCTAssertEqual(val.integerValue, 42);
 }
 
-- (void)testSwitchRegsitries {
+- (void)testSwitchRegistries {
   [self loadConfigFile:@"testdata.json"];
   ABRegistry *altRegistry = [[ABRegistry alloc] init];
   NSError *error;

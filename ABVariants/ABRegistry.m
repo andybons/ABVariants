@@ -33,12 +33,16 @@ NSString *const ABRegistryDidChangeNotification =
     @"ABRegistryDidChangeNotification";
 NSString *const ABRegistryFlagDefinitionsKey = @"flag_defs";
 NSString *const ABRegistryVariantsKey = @"variants";
+NSString *const ABVariantsRegistryErrorDomain =
+    @"ABVariantsRegistryErrorDomain";
 
 @interface ABRegistry ()
-- (void)_addFlag:(ABFlag *)flag;
-- (void)_addVariant:(ABVariant *)variant;
+- (void)_addFlag:(ABFlag *)flag error:(NSError **)error;
+- (void)_addVariant:(ABVariant *)variant error:(NSError **)error;
 - (void)_registerBuiltInConditionTypes;
-- (ABVariant *)_variantFromDictionary:(NSDictionary *)dictionary;
+- (ABVariant *)_variantFromDictionary:(NSDictionary *)dictionary
+                                error:(NSError **)error;
+- (NSError *)_registryErrorWithDescription:(NSString *)description;
 
 @property(nonatomic, strong) dispatch_queue_t isolationQueue;
 @property(nonatomic, strong) NSMutableDictionary *variantIDToVariant;
@@ -113,17 +117,25 @@ NSString *const ABRegistryVariantsKey = @"variants";
 }
 
 - (void)registerConditionTypeWithID:(NSString *)identifier
-                          specBlock:(ABConditionSpec)specBlock {
+                          specBlock:(ABConditionSpec)specBlock
+                              error:(NSError **)error {
+  __block NSError *registerError;
   identifier = [identifier uppercaseString];
   dispatch_sync(self.isolationQueue, ^{
       if (self.conditionTypeToSpecBlock[identifier]) {
-        [NSException
-             raise:@"Condition has already been registered"
-            format:
-                @"A Condition with identifier %@ has already been registered",
-                identifier];
+        NSString *errorDescription =
+            [NSString stringWithFormat:NSLocalizedString(
+                                           @"A Condition with identifier %@ "
+                                           @"has already been registered",
+                                           nil),
+                                       identifier];
+        registerError = [self _registryErrorWithDescription:errorDescription];
       }
   });
+  if (error && registerError) {
+    *error = registerError;
+    return;
+  }
   dispatch_barrier_async(self.isolationQueue, ^{
       self.conditionTypeToSpecBlock[identifier] = specBlock;
   });
@@ -135,15 +147,23 @@ NSString *const ABRegistryVariantsKey = @"variants";
   if (!config) {
     return;
   }
-  [self loadConfigFromDictionary:config];
+  [self loadConfigFromDictionary:config error:error];
 }
 
-- (void)loadConfigFromDictionary:(NSDictionary *)dictionary {
+- (void)loadConfigFromDictionary:(NSDictionary *)dictionary
+                           error:(NSError **)error {
   for (NSDictionary *d in dictionary[ABRegistryFlagDefinitionsKey]) {
-    [self _addFlag:[ABFlag flagFromDictionary:d]];
+    [self _addFlag:[ABFlag flagFromDictionary:d] error:error];
   }
   for (NSDictionary *d in dictionary[ABRegistryVariantsKey]) {
-    [self _addVariant:[self _variantFromDictionary:d]];
+    ABVariant *variant = [self _variantFromDictionary:d error:error];
+    if (!variant || (error && *error)) {
+      return;
+    }
+    [self _addVariant:variant error:error];
+    if (error && *error) {
+      return;
+    }
   }
   [[NSNotificationCenter defaultCenter]
       postNotificationName:ABRegistryDidChangeNotification
@@ -152,38 +172,60 @@ NSString *const ABRegistryVariantsKey = @"variants";
 
 #pragma mark - Private methods
 
-- (void)_addFlag:(ABFlag *)flag {
+- (void)_addFlag:(ABFlag *)flag error:(NSError **)error {
+  __block NSError *addError;
   dispatch_sync(self.isolationQueue, ^{
       if (self.flagNameToFlag[flag.name]) {
-        [NSException raise:@"Flag has already been added"
-                    format:@"A Flag with the name %@ has already been added",
-                           flag.name];
+        NSString *errorDescription = [NSString
+            stringWithFormat:
+                NSLocalizedString(
+                    @"A flag with the name %@ has already been added", nil),
+                flag.name];
+        addError = [self _registryErrorWithDescription:errorDescription];
       }
   });
+  if (error && addError) {
+    *error = addError;
+    return;
+  }
   dispatch_barrier_async(self.isolationQueue, ^{
       self.flagNameToFlag[flag.name] = flag;
       self.flagNameToVariantIDSet[flag.name] = [NSMutableSet set];
   });
 }
 
-- (void)_addVariant:(ABVariant *)variant {
+- (void)_addVariant:(ABVariant *)variant error:(NSError **)error {
+  __block NSError *addError;
   dispatch_sync(self.isolationQueue, ^{
       if (self.variantIDToVariant[variant.identifier]) {
-        [NSException
-             raise:@"Variant has already been added"
-            format:@"A Variant with the idenfier %@ has already been added",
-                   variant.identifier];
+        NSString *errorDescription = [NSString
+            stringWithFormat:
+                NSLocalizedString(
+                    @"A Variant with the identifier %@ has already been added",
+                    nil),
+                variant.identifier];
+        addError = [self _registryErrorWithDescription:errorDescription];
       }
   });
+  if (error && addError) {
+    *error = addError;
+    return;
+  }
   for (ABMod *m in variant.mods) {
     dispatch_sync(self.isolationQueue, ^{
         if (![self.flagNameToFlag.allKeys containsObject:m.flagName]) {
-          [NSException
-               raise:@"Variant has unknown flag"
-              format:@"Variant with the idenfier %@ has unknown flag %@",
-                     variant.identifier, m.flagName];
+          NSString *errorDescription = [NSString
+              stringWithFormat:
+                  NSLocalizedString(
+                      @"Variant with the idenfier %@ has unknown flag %@", nil),
+                  variant.identifier, m.flagName];
+          addError = [self _registryErrorWithDescription:errorDescription];
         }
     });
+    if (error && addError) {
+      *error = addError;
+      return;
+    }
     dispatch_barrier_async(self.isolationQueue, ^{
         [self.flagNameToVariantIDSet[m.flagName] addObject:variant.identifier];
     });
@@ -207,9 +249,17 @@ NSString *const ABRegistryVariantsKey = @"variants";
           return drand48() <= [(NSNumber *)value doubleValue];
       };
   };
-  [self registerConditionTypeWithID:@"RANDOM" specBlock:randomSpec];
+  NSError *error;
+  [self registerConditionTypeWithID:@"RANDOM"
+                          specBlock:randomSpec
+                              error:&error];
+  if (error) {
+    [NSException raise:@"Internal inconsistency exception"
+                format:@"%@", error.localizedDescription];
+  }
 
   ABConditionSpec rangeSpec = ^ABConditionEvaluator(id<NSCopying> value) {
+      // TODO(andybons): The amount of exceptions here is a bit gnarly.
       NSArray *values = (NSArray *)value;
       if (!values || values.count != 3) {
         [NSException
@@ -250,26 +300,45 @@ NSString *const ABRegistryVariantsKey = @"variants";
           return mod >= rangeBegin.integerValue && mod <= rangeEnd.integerValue;
       };
   };
-  [self registerConditionTypeWithID:@"MOD_RANGE" specBlock:rangeSpec];
+  [self registerConditionTypeWithID:@"MOD_RANGE"
+                          specBlock:rangeSpec
+                              error:&error];
+  if (error) {
+    [NSException raise:@"Internal inconsistency exception"
+                format:@"%@", error.localizedDescription];
+  }
 }
 
-- (ABVariant *)_variantFromDictionary:(NSDictionary *)dictionary {
+- (ABVariant *)_variantFromDictionary:(NSDictionary *)dictionary
+                                error:(NSError **)error {
+  NSError *variantError;
   NSMutableArray *conditions = [NSMutableArray array];
   for (NSDictionary *d in dictionary[@"conditions"]) {
     NSString *type = [d[@"type"] uppercaseString];
     ABConditionSpec spec = self.conditionTypeToSpecBlock[type];
     if (!spec) {
-      [NSException
-           raise:@"Unregistered condition type"
-          format:@"The condition type %@ has not been registered", type];
+      NSString *str = [NSString
+          stringWithFormat:@"The condition type %@ has not been registered",
+                           type];
+      variantError =
+          [self _registryErrorWithDescription:NSLocalizedString(str, nil)];
+      if (error) {
+        *error = variantError;
+      }
+      return nil;
     }
     id<NSCopying> value = d[@"value"];
     NSArray *values = d[@"values"];
     if (value && values) {
-      [NSException
-           raise:@"Invalid Variant specification"
-          format:@"Cannot specify both a value and array of values for %@",
-                 type];
+      NSString *str = [NSString
+          stringWithFormat:
+              @"Cannot specify both a value and array of values for %@", type];
+      variantError =
+          [self _registryErrorWithDescription:NSLocalizedString(str, nil)];
+      if (error) {
+        *error = variantError;
+      }
+      return nil;
     }
     ABConditionEvaluator evaluator = value ? spec(value) : spec(values);
     [conditions
@@ -279,10 +348,44 @@ NSString *const ABRegistryVariantsKey = @"variants";
   for (NSDictionary *d in dictionary[@"mods"]) {
     [mods addObject:[ABMod modFromDictionary:d]];
   }
+  NSString *op = dictionary[@"condition_operator"];
+  if ((op && conditions.count < 2) || (!op && conditions.count >= 2)) {
+    variantError =
+        [self _registryErrorWithDescription:
+                  NSLocalizedString(op ? @"Cannot have a Variant operator "
+                                        @"without multiple conditions"
+                                       : @"Cannot have multiple variant "
+                                        @"conditions without an operator",
+                                    nil)];
+    if (error) {
+      *error = variantError;
+    }
+    return nil;
+  }
+  if (op && (![op isEqualToString:ABVariantOperatorAND] &&
+             ![op isEqualToString:ABVariantOperatorOR])) {
+    NSString *str = [NSString
+        stringWithFormat:
+            @"Expected operator to be \"AND\" or \"OR\", got \"%@\"", op];
+    variantError =
+        [self _registryErrorWithDescription:NSLocalizedString(str, nil)];
+    if (error) {
+      *error = variantError;
+    }
+    return nil;
+  }
   return [[ABVariant alloc] initWithIdentifier:dictionary[@"id"]
-                                            op:dictionary[@"condition_operator"]
+                                            op:op
                                     conditions:conditions
                                           mods:mods];
+}
+
+- (NSError *)_registryErrorWithDescription:(NSString *)description {
+  return [NSError errorWithDomain:ABVariantsRegistryErrorDomain
+                             code:0
+                         userInfo:@{
+                           NSLocalizedDescriptionKey : description,
+                         }];
 }
 
 @end

@@ -34,7 +34,9 @@ extern NSString *const ABRegistryDidChangeNotification;
 - (id)flagValueWithName:(NSString *)name;
 - (id)flagValueWithName:(NSString *)name context:(id<NSCopying>)context;
 - (void)registerConditionTypeWithID:(NSString *)identifier
-                          specBlock:(ABConditionSpec)specBlock;
+                          specBlock:(ABConditionSpec)specBlock
+                              error:(NSError **)error;
 - (void)loadConfigFromData:(NSData *)data error:(NSError **)error;
-- (void)loadConfigFromDictionary:(NSDictionary *)dictionary;
+- (void)loadConfigFromDictionary:(NSDictionary *)dictionary
+                           error:(NSError **)error;
 @end

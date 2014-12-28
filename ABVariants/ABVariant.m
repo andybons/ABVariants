@@ -38,20 +38,6 @@ NSString *const ABVariantOperatorOR = @"OR";
                               mods:(NSArray *)mods {
   self = [super init];
   if (self) {
-    if ((op && conditions.count < 2) || (!op && conditions.count >= 2)) {
-      [NSException raise:@"Invalid arguments to Variant initializer"
-                  format:op ? @"Cannot have a Variant operator "
-                             @"without multiple conditions"
-                            : @"Cannot have multiple variant "
-                             @"conditions without an operator"];
-    }
-    if (op && (![op isEqualToString:ABVariantOperatorAND] &&
-               ![op isEqualToString:ABVariantOperatorOR])) {
-      [NSException
-           raise:@"Invalid operator passed to Variant initializer"
-          format:@"Expected operator to be \"AND\" or \"OR\", got \"%@\"", op];
-    }
-
     _identifier = [identifier copy];
     _op = [op copy];
     _conditions = [conditions copy];

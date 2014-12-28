@@ -24,6 +24,9 @@
 
 @import Foundation;
 
+extern NSString *const ABVariantOperatorAND;
+extern NSString *const ABVariantOperatorOR;
+
 @interface ABVariant : NSObject
 
 - (instancetype)initWithIdentifier:(NSString *)identifier
