@@ -2,6 +2,12 @@ Variants [![Build Status](https://travis-ci.org/andybons/ABVariants.svg?branch=m
 ========
 Experiments/Mods system for iOS and OS X
 
+Can be used for:
++ A/B testing
++ Experimental features
++ Trusted tester groups
++ Gradual feature rollouts
+
 This README details the Cocoa implementation of Variants. For general background, see [the general README](https://github.com/Medium/variants/).
 
 ## Detailed Design
