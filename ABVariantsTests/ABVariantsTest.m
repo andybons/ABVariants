@@ -137,7 +137,7 @@
                             };
                         }];
   [self loadConfigFile:@"custom.json"];
-  NSNumber *val = [self.registry flagValueWithName:@"custom_value" context:@{}];
+  NSNumber *val = [self.registry flagValueWithName:@"custom_value"];
   XCTAssertEqual(val.integerValue, 0);
   val = [self.registry flagValueWithName:@"custom_value"
                                  context:@{
@@ -149,6 +149,28 @@
                                    @"password" : @"secret"
                                  }];
   XCTAssertEqual(val.integerValue, 42);
+}
+
+- (void)testSwitchRegsitries {
+  [self loadConfigFile:@"testdata.json"];
+  ABRegistry *altRegistry = [[ABRegistry alloc] init];
+  NSError *error;
+  NSString *filePath =
+      [[NSBundle bundleForClass:[self class]] pathForResource:@"altdata.json"
+                                                       ofType:nil];
+  [altRegistry loadConfigFromData:[NSData dataWithContentsOfFile:filePath]
+                            error:&error];
+  XCTAssertNil(error);
+  NSNumber *val = [self.registry flagValueWithName:@"always_passes"];
+  XCTAssertTrue(val.boolValue);
+  val = [self.registry flagValueWithName:@"always_fails"];
+  XCTAssertFalse(val.boolValue);
+
+  // In the alt data file, pass and fail are flipped.
+  val = [altRegistry flagValueWithName:@"always_passes"];
+  XCTAssertFalse(val.boolValue);
+  val = [altRegistry flagValueWithName:@"always_fails"];
+  XCTAssertTrue(val.boolValue);
 }
 
 @end

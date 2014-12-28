@@ -31,6 +31,8 @@
 
 NSString *const ABRegistryDidChangeNotification =
     @"ABRegistryDidChangeNotification";
+NSString *const ABRegistryFlagDefinitionsKey = @"flag_defs";
+NSString *const ABRegistryVariantsKey = @"variants";
 
 @interface ABRegistry ()
 - (void)_addFlag:(ABFlag *)flag;
@@ -52,6 +54,28 @@ NSString *const ABRegistryDidChangeNotification =
   static ABRegistry *_defaultRegistry = nil;
   dispatch_once(&onceToken, ^{ _defaultRegistry = [[ABRegistry alloc] init]; });
   return _defaultRegistry;
+}
+
++ (instancetype)registryWithIdentifier:(NSString *)identifier {
+  static dispatch_once_t registryListToken;
+  static NSMutableDictionary *_registryIDToRegistry = nil;
+  static dispatch_queue_t _registryListQueue;
+  dispatch_once(&registryListToken, ^{
+      _registryListQueue =
+          dispatch_queue_create("com.andybons.ABVariants.namedRegistryQueue",
+                                DISPATCH_QUEUE_CONCURRENT);
+      _registryIDToRegistry = [NSMutableDictionary dictionary];
+  });
+  __block ABRegistry *registry;
+  dispatch_sync(_registryListQueue,
+                ^{ registry = _registryIDToRegistry[identifier]; });
+  if (!registry) {
+    dispatch_barrier_async(_registryListQueue, ^{
+        registry = [[ABRegistry alloc] init];
+        _registryIDToRegistry[identifier] = registry;
+    });
+  }
+  return registry;
 }
 
 - (instancetype)init {
@@ -115,10 +139,10 @@ NSString *const ABRegistryDidChangeNotification =
 }
 
 - (void)loadConfigFromDictionary:(NSDictionary *)dictionary {
-  for (NSDictionary *d in dictionary[@"flag_defs"]) {
+  for (NSDictionary *d in dictionary[ABRegistryFlagDefinitionsKey]) {
     [self _addFlag:[ABFlag flagFromDictionary:d]];
   }
-  for (NSDictionary *d in dictionary[@"variants"]) {
+  for (NSDictionary *d in dictionary[ABRegistryVariantsKey]) {
     [self _addVariant:[self _variantFromDictionary:d]];
   }
   [[NSNotificationCenter defaultCenter]
