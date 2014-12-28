@@ -1,7 +1,7 @@
 Pod::Spec.new do |spec|
   spec.name     = 'Variants'
-  spec.version  = '0.1'
-  spec.license  = 'MIT'
+  spec.version  = '1.0'
+  spec.license  = { :type => "MIT", :file => "LICENSE" }
   spec.summary  = 'Experiments/Mods system for iOS and OS X'
   spec.homepage = 'https://github.com/andybons/ABVariants'
   spec.authors  = { 'Andrew Bonventre' => 'andybons@gmail.com' }
