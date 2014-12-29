@@ -24,16 +24,49 @@
 
 @import Foundation;
 
+/**
+ An `ABFlag` defines a value that may change on a contextual basis based on the
+ `ABVariant` objects that refer to it.
+ */
 @interface ABFlag : NSObject
 
+/**
+ *  Initializes an `ABFlag` object with the given name, description, and base
+ *value.
+ *
+ *  @param name The name of the flag (e.g. `enable_feature_foo`).
+ *  @param description A description of the flag (e.g. "enables feature foo").
+ *  @param baseValue The default value of the flag.
+ *
+ *  @return A newly initialized `ABFlag` object.
+ */
 - (instancetype)initWithName:(NSString *)name
                  description:(NSString *)description
                    baseValue:(id<NSCopying>)baseValue;
 
+/**
+ *  Initializes an `ABFlag` object with the given `NSDictionary`. Typically used
+ *in conjuction with the `NSJSONSerialization` class.
+ *
+ *  @param dictionary The `ABFlag` represented as key/value pairs.
+ *
+ *  @return A newly initialized `ABFlag` object.
+ */
 + (instancetype)flagFromDictionary:(NSDictionary *)dictionary;
 
+/**
+ *  The name of the flag.
+ */
 @property(nonatomic, copy, readonly) NSString *name;
+
+/**
+ *  The description of the flag.
+ */
 @property(nonatomic, copy, readonly) NSString *flagDescription;
+
+/**
+ *  The base value of the flag.
+ */
 @property(nonatomic, copy, readonly) id baseValue;
 
 @end
