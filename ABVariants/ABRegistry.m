@@ -37,8 +37,8 @@ NSString *const ABVariantsRegistryErrorDomain =
     @"ABVariantsRegistryErrorDomain";
 
 @interface ABRegistry ()
-- (void)_addFlag:(ABFlag *)flag error:(NSError **)error;
-- (void)_addVariant:(ABVariant *)variant error:(NSError **)error;
+- (BOOL)_addFlag:(ABFlag *)flag error:(NSError **)error;
+- (BOOL)_addVariant:(ABVariant *)variant error:(NSError **)error;
 - (void)_registerBuiltInConditionTypes;
 - (ABVariant *)_variantFromDictionary:(NSDictionary *)dictionary
                                 error:(NSError **)error;
@@ -116,7 +116,7 @@ NSString *const ABVariantsRegistryErrorDomain =
   return value;
 }
 
-- (void)registerConditionTypeWithID:(NSString *)identifier
+- (BOOL)registerConditionTypeWithID:(NSString *)identifier
                           specBlock:(ABConditionSpec)specBlock
                               error:(NSError **)error {
   __block NSError *registerError;
@@ -134,23 +134,24 @@ NSString *const ABVariantsRegistryErrorDomain =
   });
   if (error && registerError) {
     *error = registerError;
-    return;
+    return NO;
   }
   dispatch_barrier_async(self.isolationQueue, ^{
       self.conditionTypeToSpecBlock[identifier] = specBlock;
   });
+  return YES;
 }
 
-- (void)loadConfigFromData:(NSData *)data error:(NSError **)error {
+- (BOOL)loadConfigFromData:(NSData *)data error:(NSError **)error {
   NSDictionary *config =
       [NSJSONSerialization JSONObjectWithData:data options:0 error:error];
   if (!config) {
-    return;
+    return NO;
   }
-  [self loadConfigFromDictionary:config error:error];
+  return [self loadConfigFromDictionary:config error:error];
 }
 
-- (void)loadConfigFromDictionary:(NSDictionary *)dictionary
+- (BOOL)loadConfigFromDictionary:(NSDictionary *)dictionary
                            error:(NSError **)error {
   for (NSDictionary *d in dictionary[ABRegistryFlagDefinitionsKey]) {
     [self _addFlag:[ABFlag flagFromDictionary:d] error:error];
@@ -158,21 +159,22 @@ NSString *const ABVariantsRegistryErrorDomain =
   for (NSDictionary *d in dictionary[ABRegistryVariantsKey]) {
     ABVariant *variant = [self _variantFromDictionary:d error:error];
     if (!variant || (error && *error)) {
-      return;
+      return NO;
     }
     [self _addVariant:variant error:error];
     if (error && *error) {
-      return;
+      return NO;
     }
   }
   [[NSNotificationCenter defaultCenter]
       postNotificationName:ABRegistryDidChangeNotification
                     object:self];
+  return YES;
 }
 
 #pragma mark - Private methods
 
-- (void)_addFlag:(ABFlag *)flag error:(NSError **)error {
+- (BOOL)_addFlag:(ABFlag *)flag error:(NSError **)error {
   __block NSError *addError;
   dispatch_sync(self.isolationQueue, ^{
       if (self.flagNameToFlag[flag.name]) {
@@ -186,15 +188,16 @@ NSString *const ABVariantsRegistryErrorDomain =
   });
   if (error && addError) {
     *error = addError;
-    return;
+    return NO;
   }
   dispatch_barrier_async(self.isolationQueue, ^{
       self.flagNameToFlag[flag.name] = flag;
       self.flagNameToVariantIDSet[flag.name] = [NSMutableSet set];
   });
+  return YES;
 }
 
-- (void)_addVariant:(ABVariant *)variant error:(NSError **)error {
+- (BOOL)_addVariant:(ABVariant *)variant error:(NSError **)error {
   __block NSError *addError;
   dispatch_sync(self.isolationQueue, ^{
       if (self.variantIDToVariant[variant.identifier]) {
@@ -209,7 +212,7 @@ NSString *const ABVariantsRegistryErrorDomain =
   });
   if (error && addError) {
     *error = addError;
-    return;
+    return NO;
   }
   for (ABMod *m in variant.mods) {
     dispatch_sync(self.isolationQueue, ^{
@@ -224,7 +227,7 @@ NSString *const ABVariantsRegistryErrorDomain =
     });
     if (error && addError) {
       *error = addError;
-      return;
+      return NO;
     }
     dispatch_barrier_async(self.isolationQueue, ^{
         [self.flagNameToVariantIDSet[m.flagName] addObject:variant.identifier];
@@ -233,6 +236,7 @@ NSString *const ABVariantsRegistryErrorDomain =
   dispatch_barrier_async(self.isolationQueue, ^{
       self.variantIDToVariant[variant.identifier] = variant;
   });
+  return YES;
 }
 
 - (void)_registerBuiltInConditionTypes {

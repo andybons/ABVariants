@@ -74,8 +74,11 @@
  *parameters typically supplied by a configuration file.
  *  @param error      If an error occurs, upon return contains an NSError object
  *that describes the problem.
+ *
+ *  @return Whether registration was successful. If `NO`, then the passed
+ *NSError object will contain the reason why.
  */
-- (void)registerConditionTypeWithID:(NSString *)identifier
+- (BOOL)registerConditionTypeWithID:(NSString *)identifier
                           specBlock:(ABConditionSpec)specBlock
                               error:(NSError **)error;
 
@@ -83,11 +86,14 @@
  *  Loads `ABFlags`, `ABConditions`, and `ABVariants` into the Registry from an
  *NSData object that will be deserialized using `NSJSONSerialization`.
  *
- *  @param data  <#data description#>
+ *  @param data  A data object containing JSON data from a config file.
  *  @param error If an error occurs, upon return contains an NSError object that
  *describes the problem.
+ *
+ *  @return Whether loading the config was successful. If `NO`, then the passed
+ *NSError object will contain the reason why.
  */
-- (void)loadConfigFromData:(NSData *)data error:(NSError **)error;
+- (BOOL)loadConfigFromData:(NSData *)data error:(NSError **)error;
 
 /**
  *  Loads `ABFlags`, `ABConditions`, and `ABVariants` into the Registry from an
@@ -96,8 +102,11 @@
  *  @param dictionary The `ABRegistry` represented as key/value pairs.
  *  @param error      If an error occurs, upon return contains an NSError object
  *that describes the problem.
+ *
+ *  @return Whether loading the config was successful. If `NO`, then the passed
+ *NSError object will contain the reason why.
  */
-- (void)loadConfigFromDictionary:(NSDictionary *)dictionary
+- (BOOL)loadConfigFromDictionary:(NSDictionary *)dictionary
                            error:(NSError **)error;
 @end
 
