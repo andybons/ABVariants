@@ -203,4 +203,12 @@
   XCTAssertTrue(val.boolValue);
 }
 
+- (void)testNamedRegistry {
+  ABRegistry *first = [ABRegistry registryWithIdentifier:@"foo"];
+  XCTAssertNotNil(first);
+  ABRegistry *second = [ABRegistry registryWithIdentifier:@"bar"];
+  XCTAssertNotNil(second);
+  XCTAssertNotEqual(first, second);
+}
+
 @end

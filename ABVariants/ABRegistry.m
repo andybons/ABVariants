@@ -75,9 +75,10 @@ NSString *const ABVariantsRegistryErrorDomain =
                 ^{ registry = _registryIDToRegistry[identifier]; });
   if (!registry) {
     dispatch_barrier_async(_registryListQueue, ^{
-        registry = [[ABRegistry alloc] init];
-        _registryIDToRegistry[identifier] = registry;
+        _registryIDToRegistry[identifier] = [[ABRegistry alloc] init];
     });
+    dispatch_sync(_registryListQueue,
+                  ^{ registry = _registryIDToRegistry[identifier]; });
   }
   return registry;
 }

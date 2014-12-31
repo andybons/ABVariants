@@ -38,6 +38,16 @@
 + (instancetype)defaultRegistry;
 
 /**
+ *  Returns an `ABRegistry` with the given identifier, lazily creating it if
+ *necessary.
+ *
+ *  @param identifier A unique identifier for the Registry.
+ *
+ *  @return An `ABRegistry` with the given identifier.
+ */
++ (instancetype)registryWithIdentifier:(NSString *)identifier;
+
+/**
  *  Returns the value of a flag given an empty context object.
  *
  *  @param name The name of the flag to evalute.
